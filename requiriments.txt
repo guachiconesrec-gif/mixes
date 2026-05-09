@@ -1,1 +1,14 @@
 
+spotipy
+fastapi
+uvicorn 
+jinja2
+python-multipart
+python-dotenv
+airtable-python-wrapper
+lyricsgenius
+itsdangerous
+psycopg2-binary 
+SQLAlchemy
+passlib
+bcrypt==3.2.2
