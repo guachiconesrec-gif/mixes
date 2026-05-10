@@ -21,6 +21,11 @@ def obtener_credenciales():
             "client_id": os.getenv("ARMANDO_CLIENT_ID") or os.getenv("armando_CLIENT_ID"),
             "client_secret": os.getenv("ARMANDO_SECRET_ID") or os.getenv("ARMANDO_CLIENT_SECRET")
         },
+        "cuenta8": {
+            "client_id": os.getenv("CUENTA8_CLIENT_ID") or os.getenv("cuenta8_CLIENT_ID"),
+            "client_secret": os.getenv("CUENTA8_SECRET_ID") or os.getenv("CUENTA8_CLIENT_SECRET")
+        }
+    } # <--- Esta es la llave que faltaba
       
 
 USUARIOS_PERMITIDOS = list(obtener_credenciales().keys())
