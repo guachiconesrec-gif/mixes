@@ -18,8 +18,8 @@ def obtener_credenciales():
             "client_secret": os.getenv("MIGUEL_SECRET_ID") or os.getenv("MIGUEL_CLIENT_SECRET")
         },
         "sermusic": {
-            "client_id": os.getenv("ARMANDO_CLIENT_ID") or os.getenv("armando_CLIENT_ID"),
-            "client_secret": os.getenv("ARMANDO_SECRET_ID") or os.getenv("ARMANDO_CLIENT_SECRET")
+            "client_id": os.getenv("SERMUSIC_CLIENT_ID") or os.getenv("sermusic_CLIENT_ID"),
+            "client_secret": os.getenv("SERMUSIC_SECRET_ID") or os.getenv("sermusic_CLIENT_SECRET")
         },
         "cuenta8": {
             "client_id": os.getenv("CUENTA8_CLIENT_ID") or os.getenv("cuenta8_CLIENT_ID"),
