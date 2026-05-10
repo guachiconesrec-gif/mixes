@@ -5,8 +5,8 @@ from spotipy.cache_handler import MemoryCacheHandler
 from pathlib import Path
 import shutil
 import re
-import requests  # <--- AÑADIDO PARA DESCARGAR LA IMAGEN
-import base64    # <--- AÑADIDO PARA CONVERTIR LA IMAGEN
+import requests
+import base64
 from spotipy.exceptions import SpotifyException
 from dotenv import load_dotenv
 
@@ -26,8 +26,7 @@ def obtener_credenciales():
             "client_id": os.getenv("CUENTA8_CLIENT_ID") or os.getenv("cuenta8_CLIENT_ID"),
             "client_secret": os.getenv("CUENTA8_SECRET_ID") or os.getenv("CUENTA8_CLIENT_SECRET")
         }
-    } # <--- Esta es la llave que faltaba
-      
+    }
 
 USUARIOS_PERMITIDOS = list(obtener_credenciales().keys())
 
@@ -135,10 +134,26 @@ def crear_playlist_para_artista(artist_name, num_tracks=50, language="es", acces
         if not track_uris:
             return {"status": "error", "message": "No se encontraron canciones."}
 
-        # --- 1. ESTRUCTURA DE NOMBRE ACTUALIZADA ---
+        # --- 1. ESTRUCTURA DE NOMBRE ---
         playlist_name = f"{artist['name']} MIX - Todas las canciones MUSICA de {artist['name']} MIX Exitos"
         
-        playlist = sp.user_playlist_create(user=user_id, name=playlist_name, public=True)
+        # --- 2. LÓGICA DE DESCRIPCIÓN CON NOMBRES DE CANCIONES ---
+        track_names = []
+        try:
+            # Pedimos a Spotify los detalles de las canciones encontradas (máximo 50)
+            pistas_info = sp.tracks(track_uris[:50])
+            for track in pistas_info['tracks']:
+                if track and 'name' in track:
+                    track_names.append(track['name'])
+        except Exception as e:
+            print(f"Error obteniendo nombres de canciones: {e}")
+            
+        # Unimos los nombres y los cortamos a 300 caracteres máximo para evitar el error 400 de Spotify
+        descripcion = f"Mejores canciones de {artist['name']}: " + ", ".join(track_names)
+        descripcion = descripcion[:300]
+        
+        # Creamos la playlist con la descripción incluida
+        playlist = sp.user_playlist_create(user=user_id, name=playlist_name, public=True, description=descripcion)
         playlist_id = playlist['id']
         
         sp.playlist_add_items(playlist_id, track_uris)
@@ -147,7 +162,7 @@ def crear_playlist_para_artista(artist_name, num_tracks=50, language="es", acces
             limpios = [limpiar_id_track(i) for i in id_extra if limpiar_id_track(i)]
             if limpios: sp.playlist_add_items(playlist_id, limpios, position=5)
 
-        # --- 2. LÓGICA DE FOTO DE PERFIL COMO PORTADA ---
+        # --- 3. LÓGICA DE FOTO DE PERFIL COMO PORTADA ---
         try:
             artist_images = artist.get("images", [])
             if artist_images:
