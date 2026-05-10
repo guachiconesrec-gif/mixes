@@ -1,4 +1,3 @@
-
 import os
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
@@ -6,6 +5,8 @@ from spotipy.cache_handler import MemoryCacheHandler
 from pathlib import Path
 import shutil
 import re
+import requests  # <--- AÑADIDO PARA DESCARGAR LA IMAGEN
+import base64    # <--- AÑADIDO PARA CONVERTIR LA IMAGEN
 from spotipy.exceptions import SpotifyException
 from dotenv import load_dotenv
 
@@ -120,7 +121,6 @@ def crear_playlist_para_artista(artist_name, num_tracks=50, language="es", acces
          return {"status": "error", "message": "Sesión expirada. Por favor, conecta Spotify de nuevo."}
          
     try:
-        # Iniciamos Spotipy usando directamente el token del navegador
         sp = spotipy.Spotify(auth=access_token)
         user_info = sp.current_user()
         user_id = user_info['id']
@@ -135,13 +135,31 @@ def crear_playlist_para_artista(artist_name, num_tracks=50, language="es", acces
         if not track_uris:
             return {"status": "error", "message": "No se encontraron canciones."}
 
-        playlist_name = f"{artist['name']} Éxitos MIX"
+        # --- 1. ESTRUCTURA DE NOMBRE ACTUALIZADA ---
+        playlist_name = f"{artist['name']} MIX - Todas las canciones MUSICA de {artist['name']} MIX Exitos"
+        
         playlist = sp.user_playlist_create(user=user_id, name=playlist_name, public=True)
-        sp.playlist_add_items(playlist['id'], track_uris)
+        playlist_id = playlist['id']
+        
+        sp.playlist_add_items(playlist_id, track_uris)
         
         if id_extra:
             limpios = [limpiar_id_track(i) for i in id_extra if limpiar_id_track(i)]
-            if limpios: sp.playlist_add_items(playlist['id'], limpios, position=5)
+            if limpios: sp.playlist_add_items(playlist_id, limpios, position=5)
+
+        # --- 2. LÓGICA DE FOTO DE PERFIL COMO PORTADA ---
+        try:
+            artist_images = artist.get("images", [])
+            if artist_images:
+                # Tomamos la imagen [0] que suele ser la de mayor resolución
+                image_url = artist_images[0]["url"]
+                resp = requests.get(image_url)
+                
+                if resp.status_code == 200:
+                    encoded_image = base64.b64encode(resp.content).decode("utf-8")
+                    sp.playlist_upload_cover_image(playlist_id, encoded_image)
+        except Exception as e:
+            print(f"⚠️ Aviso: No se pudo colocar la foto de portada para {artist['name']}. Error: {e}")
 
         return {"status": "success", "playlist_url": playlist['external_urls']['spotify']}
     
