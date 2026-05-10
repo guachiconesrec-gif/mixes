@@ -17,35 +17,11 @@ def obtener_credenciales():
             "client_id": os.getenv("MIGUEL_CLIENT_ID") or os.getenv("miguel_CLIENT_ID"),
             "client_secret": os.getenv("MIGUEL_SECRET_ID") or os.getenv("MIGUEL_CLIENT_SECRET")
         },
-        "alessandra": {
-            "client_id": os.getenv("ALESSANDRA_CLIENT_ID") or os.getenv("alessandra_CLIENT_ID"),
-            "client_secret": os.getenv("ALESSANDRA_SECRET_ID") or os.getenv("ALESSANDRA_CLIENT_SECRET")
-        },
-        "armando": {
+        "sermusic": {
             "client_id": os.getenv("ARMANDO_CLIENT_ID") or os.getenv("armando_CLIENT_ID"),
             "client_secret": os.getenv("ARMANDO_SECRET_ID") or os.getenv("ARMANDO_CLIENT_SECRET")
         },
-        "juan": {
-            "client_id": os.getenv("JUAN_CLIENT_ID") or os.getenv("juan_CLIENT_ID"),
-            "client_secret": os.getenv("JUAN_SECRET_ID") or os.getenv("JUAN_CLIENT_SECRET")
-        },
-        "luisiana": {
-            "client_id": os.getenv("LUISIANA_CLIENT_ID") or os.getenv("luisiana_CLIENT_ID"),
-            "client_secret": os.getenv("LUISIANA_SECRET_ID") or os.getenv("LUISIANA_CLIENT_SECRET")
-        },
-        "guo": {
-            "client_id": os.getenv("GUO_CLIENT_ID") or os.getenv("guo_CLIENT_ID"),
-            "client_secret": os.getenv("GUO_SECRET_ID") or os.getenv("GUO_CLIENT_SECRET")
-        },
-        "cuenta7": {
-            "client_id": os.getenv("CUENTA7_CLIENT_ID") or os.getenv("cuenta7_CLIENT_ID"),
-            "client_secret": os.getenv("CUENTA7_SECRET_ID") or os.getenv("CUENTA7_CLIENT_SECRET")
-        },
-        "cuenta8": {
-            "client_id": os.getenv("CUENTA8_CLIENT_ID") or os.getenv("cuenta8_CLIENT_ID"),
-            "client_secret": os.getenv("CUENTA8_SECRET_ID") or os.getenv("CUENTA8_CLIENT_SECRET")
-        }
-    }
+      
 
 USUARIOS_PERMITIDOS = list(obtener_credenciales().keys())
 
