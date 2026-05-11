@@ -143,7 +143,6 @@ def crear_playlist_para_artista(artist_name, num_tracks=50, language="es", acces
         # --- 2. LÓGICA DE DESCRIPCIÓN CON NOMBRES DE CANCIONES ---
         track_names = []
         try:
-            # Pedimos a Spotify los detalles de las canciones encontradas (máximo 50)
             pistas_info = sp.tracks(track_uris[:50])
             for track in pistas_info['tracks']:
                 if track and 'name' in track:
@@ -151,16 +150,13 @@ def crear_playlist_para_artista(artist_name, num_tracks=50, language="es", acces
         except Exception as e:
             print(f"Error obteniendo nombres de canciones: {e}")
             
-        # Unimos los nombres y adaptamos el prefijo al idioma
         if language == "en":
             descripcion = f"Best songs by {artist['name']}: " + ", ".join(track_names)
         else:
             descripcion = f"Mejores canciones de {artist['name']}: " + ", ".join(track_names)
             
-        # Cortamos a 300 caracteres máximo para evitar el error 400 de Spotify
         descripcion = descripcion[:300]
         
-        # Creamos la playlist con la descripción incluida
         playlist = sp.user_playlist_create(user=user_id, name=playlist_name, public=True, description=descripcion)
         playlist_id = playlist['id']
         
@@ -174,7 +170,7 @@ def crear_playlist_para_artista(artist_name, num_tracks=50, language="es", acces
                 for track_id in limpios:
                     try:
                         sp.playlist_add_items(playlist_id, [track_id], position=posicion_actual)
-                        posicion_actual += 5 # Suma 5 a la posición para la siguiente canción
+                        posicion_actual += 5 
                     except Exception as e:
                         print(f"Aviso: No se pudo insertar canción extra en la posición {posicion_actual}. Error: {e}")
 
@@ -182,7 +178,6 @@ def crear_playlist_para_artista(artist_name, num_tracks=50, language="es", acces
         try:
             artist_images = artist.get("images", [])
             if artist_images:
-                # Tomamos la imagen [0] que suele ser la de mayor resolución
                 image_url = artist_images[0]["url"]
                 resp = requests.get(image_url)
                 
@@ -192,7 +187,12 @@ def crear_playlist_para_artista(artist_name, num_tracks=50, language="es", acces
         except Exception as e:
             print(f"⚠️ Aviso: No se pudo colocar la foto de portada para {artist['name']}. Error: {e}")
 
-        return {"status": "success", "playlist_url": playlist['external_urls']['spotify']}
+        # NUEVO: Devolvemos el playlist_id para que el frontend lo pueda copiar
+        return {
+            "status": "success", 
+            "playlist_url": playlist['external_urls']['spotify'],
+            "playlist_id": playlist_id 
+        }
     
     except SpotifyException as e:
         if e.http_status in (403, 400):
@@ -203,8 +203,21 @@ def crear_playlist_para_artista(artist_name, num_tracks=50, language="es", acces
 
 def crear_listas_por_nombres(nombres, language="es", access_token=None, id_extra=None):
     results = []
+    ids_creados = [] # NUEVO: Guardaremos todos los IDs creados aquí
+    
     for n in nombres:
         if str(n).strip():
             res = crear_playlist_para_artista(n.strip(), 50, language, access_token, id_extra)
             results.append({"artista": n, "status": res['status'], "message": res.get("message", "")})
-    return results
+            
+            # Si se creó con éxito, guardamos el ID
+            if res['status'] == 'success' and 'playlist_id' in res:
+                ids_creados.append(res['playlist_id'])
+                
+    # NUEVO: Devolvemos un formato agrupado compatible con nuestro HTML para la versión masiva
+    return {
+        "status": "success" if ids_creados else "error",
+        "message": "Lote procesado",
+        "playlist_ids": ids_creados,
+        "detalles": results
+    }
