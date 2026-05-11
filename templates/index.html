@@ -95,7 +95,6 @@
 
                 <hr style="width:100%; border:0; border-top:1px solid #333; margin:2rem 0">
 
-                <!-- SECCIÓN ACTUALIZADA CON BOTÓN DE COPIAR -->
                 <div class="form-section">
                     <h2>Canciones Extras</h2>
                     <p style="color: #aaa; font-size: 0.8rem; margin-bottom: 10px;">Se añadirán a las listas Individuales y Masivas</p>
@@ -105,8 +104,8 @@
                             <button type="button" class="btn-dinamico" onclick="agregarCampoExtra()">+</button>
                         </div>
                     </div>
-                    <!-- Integración del botón copiar -->
-                    <button type="button" class="btn-copiar-ids" onclick="copiarIdsExtras()">📋 Copiar IDs (separados por coma)</button>
+                    <!-- Botón de copiar corregido -->
+                    <button type="button" class="btn-copiar-ids" onclick="copiarIdsPlaylists()">📋 Copiar IDs de Playlists Creadas</button>
                 </div>
             </div>
 
@@ -120,23 +119,28 @@
     </main>
 
    <script>
-       // --- NUEVA FUNCIÓN: COPIAR IDS AL PORTAPAPELES ---
-       function copiarIdsExtras() {
-           const ids = obtenerExtrasActuales();
-           if (ids.length === 0) {
-               alert("No hay IDs para copiar.");
+       // --- VARIABLE GLOBAL PARA GUARDAR LOS IDS GENERADOS ---
+       let idsPlaylistsCreadas = [];
+
+       // --- NUEVA FUNCIÓN: COPIAR IDS DE PLAYLISTS AL PORTAPAPELES ---
+       function copiarIdsPlaylists() {
+           if (idsPlaylistsCreadas.length === 0) {
+               alert("No hay IDs de playlists para copiar todavía. Primero debes crear una.");
                return;
            }
-           const textoACopiar = ids.join(',');
+           
+           // Se unen todos los IDs guardados separados por coma
+           const textoACopiar = idsPlaylistsCreadas.join(',');
            
            navigator.clipboard.writeText(textoACopiar).then(() => {
-               alert("IDs copiados: " + textoACopiar);
+               alert("IDs copiados exitosamente:\n" + textoACopiar);
            }).catch(err => {
                console.error('Error al copiar: ', err);
+               alert("No se pudo copiar al portapapeles.");
            });
        }
 
-       // --- FUNCIÓN PARA RECOPILAR LAS CANCIONES EXTRAS ---
+       // --- FUNCIÓN PARA RECOPILAR LAS CANCIONES EXTRAS (Se usa solo para enviar al backend) ---
        function obtenerExtrasActuales() {
            const inputs = document.querySelectorAll('input[name="cancion_extra_id"]');
            return Array.from(inputs)
@@ -172,6 +176,12 @@
                    alert("Error de Spotify: " + data[0].message); 
                } else if (data[0] && data[0].status === 'success') {
                    alert('¡Playlist creada con éxito!');
+                   
+                   // AQUÍ GUARDAMOS EL ID DE LA PLAYLIST RECIÉN CREADA
+                   if (data[0].playlist_id) {
+                       idsPlaylistsCreadas.push(data[0].playlist_id);
+                   }
+
                    document.getElementById('art-1').value = ""; 
                    localStorage.removeItem('borrador_artista_individual');
                } else {
@@ -206,9 +216,23 @@
                    })
                });
                const data = await res.json();
-               alert('¡Lote procesado! Revisa tu Spotify.');
-               document.getElementById('art-m').value = ""; 
-               localStorage.removeItem('borrador_artistas_masivos');
+               
+               if (data[0] && data[0].status === 'success') {
+                   alert('¡Lote procesado! Revisa tu Spotify.');
+                   
+                   // AQUÍ GUARDAMOS LOS IDS DE LAS PLAYLISTS MASIVAS
+                   if (data[0].playlist_ids && Array.isArray(data[0].playlist_ids)) {
+                       idsPlaylistsCreadas = idsPlaylistsCreadas.concat(data[0].playlist_ids);
+                   } else if (data[0].playlist_id) {
+                       idsPlaylistsCreadas.push(data[0].playlist_id);
+                   }
+
+                   document.getElementById('art-m').value = ""; 
+                   localStorage.removeItem('borrador_artistas_masivos');
+               } else {
+                   alert('Error al procesar el lote masivo.');
+               }
+               
            } catch (err) {
                alert("Error procesando el lote.");
            } finally {
