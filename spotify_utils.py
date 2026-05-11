@@ -134,8 +134,11 @@ def crear_playlist_para_artista(artist_name, num_tracks=50, language="es", acces
         if not track_uris:
             return {"status": "error", "message": "No se encontraron canciones."}
 
-        # --- 1. ESTRUCTURA DE NOMBRE ---
-        playlist_name = f"{artist['name']} MIX - Todas las canciones MUSICA de {artist['name']} MIX Exitos"
+        # --- 1. ESTRUCTURA DE NOMBRE POR IDIOMA ---
+        if language == "en":
+            playlist_name = f"{artist['name']} All Songs - Best of {artist['name']} MIX | {artist['name']} Greatest Hits"
+        else:
+            playlist_name = f"{artist['name']} MIX - Todas las canciones MUSICA de {artist['name']} MIX Exitos"
         
         # --- 2. LÓGICA DE DESCRIPCIÓN CON NOMBRES DE CANCIONES ---
         track_names = []
@@ -148,8 +151,13 @@ def crear_playlist_para_artista(artist_name, num_tracks=50, language="es", acces
         except Exception as e:
             print(f"Error obteniendo nombres de canciones: {e}")
             
-        # Unimos los nombres y los cortamos a 300 caracteres máximo para evitar el error 400 de Spotify
-        descripcion = f"Mejores canciones de {artist['name']}: " + ", ".join(track_names)
+        # Unimos los nombres y adaptamos el prefijo al idioma
+        if language == "en":
+            descripcion = f"Best songs by {artist['name']}: " + ", ".join(track_names)
+        else:
+            descripcion = f"Mejores canciones de {artist['name']}: " + ", ".join(track_names)
+            
+        # Cortamos a 300 caracteres máximo para evitar el error 400 de Spotify
         descripcion = descripcion[:300]
         
         # Creamos la playlist con la descripción incluida
@@ -158,11 +166,19 @@ def crear_playlist_para_artista(artist_name, num_tracks=50, language="es", acces
         
         sp.playlist_add_items(playlist_id, track_uris)
         
+        # --- 3. LÓGICA DE INSERCIÓN CADA 5 PUESTOS ---
         if id_extra:
             limpios = [limpiar_id_track(i) for i in id_extra if limpiar_id_track(i)]
-            if limpios: sp.playlist_add_items(playlist_id, limpios, position=5)
+            if limpios:
+                posicion_actual = 8
+                for track_id in limpios:
+                    try:
+                        sp.playlist_add_items(playlist_id, [track_id], position=posicion_actual)
+                        posicion_actual += 5 # Suma 5 a la posición para la siguiente canción
+                    except Exception as e:
+                        print(f"Aviso: No se pudo insertar canción extra en la posición {posicion_actual}. Error: {e}")
 
-        # --- 3. LÓGICA DE FOTO DE PERFIL COMO PORTADA ---
+        # --- 4. LÓGICA DE FOTO DE PERFIL COMO PORTADA ---
         try:
             artist_images = artist.get("images", [])
             if artist_images:
