@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -19,7 +18,7 @@
             background-color: #1DB954; /* Verde Spotify */
             color: white;
             transition: 0.2s;
-            height: 40px; /* Para alinearlo bien con tus inputs */
+            height: 40px; 
         }
         .btn-dinamico:hover {
             background-color: #1ed760;
@@ -38,7 +37,25 @@
         }
         .input-row input {
             flex: 1;
-            margin-bottom: 0; /* Sobrescribe el margin inferior para alinearse con el botón */
+            margin-bottom: 0; 
+        }
+
+        /* --- ESTILO INTEGRACIÓN BOTÓN COPIAR --- */
+        .btn-copiar-ids {
+            background-color: #333;
+            color: #1DB954;
+            border: 1px solid #1DB954;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+            width: 100%;
+            transition: 0.3s;
+        }
+        .btn-copiar-ids:hover {
+            background-color: #1DB954;
+            color: white;
         }
     </style>
 </head>
@@ -78,7 +95,7 @@
 
                 <hr style="width:100%; border:0; border-top:1px solid #333; margin:2rem 0">
 
-                <!-- NUEVA SECCIÓN: CANCIONES EXTRAS -->
+                <!-- SECCIÓN ACTUALIZADA CON BOTÓN DE COPIAR -->
                 <div class="form-section">
                     <h2>Canciones Extras</h2>
                     <p style="color: #aaa; font-size: 0.8rem; margin-bottom: 10px;">Se añadirán a las listas Individuales y Masivas</p>
@@ -88,6 +105,8 @@
                             <button type="button" class="btn-dinamico" onclick="agregarCampoExtra()">+</button>
                         </div>
                     </div>
+                    <!-- Integración del botón copiar -->
+                    <button type="button" class="btn-copiar-ids" onclick="copiarIdsExtras()">📋 Copiar IDs (separados por coma)</button>
                 </div>
             </div>
 
@@ -101,12 +120,28 @@
     </main>
 
    <script>
-       // --- FUNCIÓN PARA RECOPILAR LAS CANCIONES EXTRAS AL ENVIAR ---
+       // --- NUEVA FUNCIÓN: COPIAR IDS AL PORTAPAPELES ---
+       function copiarIdsExtras() {
+           const ids = obtenerExtrasActuales();
+           if (ids.length === 0) {
+               alert("No hay IDs para copiar.");
+               return;
+           }
+           const textoACopiar = ids.join(',');
+           
+           navigator.clipboard.writeText(textoACopiar).then(() => {
+               alert("IDs copiados: " + textoACopiar);
+           }).catch(err => {
+               console.error('Error al copiar: ', err);
+           });
+       }
+
+       // --- FUNCIÓN PARA RECOPILAR LAS CANCIONES EXTRAS ---
        function obtenerExtrasActuales() {
            const inputs = document.querySelectorAll('input[name="cancion_extra_id"]');
            return Array.from(inputs)
                        .map(input => input.value.trim())
-                       .filter(val => val !== ""); // Solo devolvemos los que no estén vacíos
+                       .filter(val => val !== ""); 
        }
 
        async function crearUno(e) {
@@ -117,7 +152,7 @@
 
            const val = document.getElementById('art-1').value;
            const lang = document.getElementById('lang-select').value;
-           const extras = obtenerExtrasActuales(); // Capturamos los tracks extra
+           const extras = obtenerExtrasActuales(); 
            
            try {
                const res = await fetch('/api/crear_playlist', {
@@ -126,7 +161,7 @@
                    body: JSON.stringify({
                        artist_name: val, 
                        language: lang,
-                       id_extra: extras // Enviamos los extras al backend
+                       id_extra: extras 
                    })
                });
                const data = await res.json();
@@ -137,7 +172,7 @@
                    alert("Error de Spotify: " + data[0].message); 
                } else if (data[0] && data[0].status === 'success') {
                    alert('¡Playlist creada con éxito!');
-                   document.getElementById('art-1').value = ""; // Limpiamos el input individual
+                   document.getElementById('art-1').value = ""; 
                    localStorage.removeItem('borrador_artista_individual');
                } else {
                    alert('Error desconocido al crear la playlist.');
@@ -158,7 +193,7 @@
 
            const val = document.getElementById('art-m').value;
            const lang = document.getElementById('lang-select').value;
-           const extras = obtenerExtrasActuales(); // Capturamos los tracks extra
+           const extras = obtenerExtrasActuales(); 
            
            try {
                const res = await fetch('/api/crear_listas_json', {
@@ -167,12 +202,12 @@
                    body: JSON.stringify({
                        nombres: val, 
                        language: lang,
-                       id_extra: extras // Enviamos los extras al backend
+                       id_extra: extras 
                    })
                });
                const data = await res.json();
                alert('¡Lote procesado! Revisa tu Spotify.');
-               document.getElementById('art-m').value = ""; // Limpiamos el textarea masivo
+               document.getElementById('art-m').value = ""; 
                localStorage.removeItem('borrador_artistas_masivos');
            } catch (err) {
                alert("Error procesando el lote.");
@@ -191,20 +226,15 @@
            alert('Imagen guardada');
        }
 
-       // ====================================================================
-       // SISTEMA DE CAMPOS DINÁMICOS Y AUTOGUARDADO
-       // ====================================================================
-
        function agregarCampoExtra(valorInicial = "") {
            const contenedor = document.getElementById("contenedor-extras");
-           
            const nuevaFila = document.createElement("div");
            nuevaFila.className = "input-row";
            
            const nuevoInput = document.createElement("input");
            nuevoInput.type = "text";
            nuevoInput.name = "cancion_extra_id"; 
-           nuevoInput.className = "input-artista"; // Hereda tus estilos base
+           nuevoInput.className = "input-artista"; 
            nuevoInput.placeholder = "ID de la canción (Opcional)";
            nuevoInput.value = valorInicial;
            
@@ -231,8 +261,6 @@
        }
 
        document.addEventListener("DOMContentLoaded", function() {
-           
-           // 1. Cargar autoguardado de campos normales
            const camposEstandar = document.querySelectorAll('input[name="artista_individual"], textarea[name="artistas_masivos"]');
            camposEstandar.forEach(campo => {
                const valorGuardado = localStorage.getItem('borrador_' + campo.name);
@@ -244,7 +272,6 @@
                });
            });
 
-           // 2. Cargar los IDs Extras Guardados en Memoria
            const inputFijo = document.getElementById('extra_fijo');
            inputFijo.addEventListener('input', guardarExtras);
 
@@ -252,7 +279,6 @@
            
            if (extrasGuardados.length > 0) {
                inputFijo.value = extrasGuardados[0];
-               
                for (let i = 1; i < extrasGuardados.length; i++) {
                    agregarCampoExtra(extrasGuardados[i]);
                }
