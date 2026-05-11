@@ -43,7 +43,6 @@ templates = Jinja2Templates(directory="templates")
 
 def guardar_token_para_usuario(request: Request, usuario: str, token_info: dict):
     """Guarda el token en la sesión asociado al usuario."""
-    # Añadimos el nombre de usuario dentro del token para verificación extra
     token_info["usuario"] = usuario
     request.session[f"token_{usuario}"] = token_info
 
@@ -56,7 +55,6 @@ def obtener_token_valido(request: Request, usuario: str):
         print(f"No se encontró token para {usuario}")
         return None
 
-    # Verifica que el token pertenezca al usuario
     if token_info.get("usuario") != usuario:
         print(f"Token guardado no coincide con el usuario {usuario}")
         return None
@@ -66,12 +64,11 @@ def obtener_token_valido(request: Request, usuario: str):
         if auth_manager.is_token_expired(token_info):
             print(f"Token de {usuario} expirado, refrescando...")
             token_info = auth_manager.refresh_access_token(token_info['refresh_token'])
-            token_info['usuario'] = usuario  # reasegurar
+            token_info['usuario'] = usuario
             request.session[token_key] = token_info
         return token_info['access_token']
     except Exception as e:
         print(f"Error al validar/refrescar token para {usuario}: {e}")
-        # Si falla, eliminamos el token corrupto
         request.session.pop(token_key, None)
         return None
 
@@ -119,9 +116,6 @@ async def procesar_login(
         
     resp = RedirectResponse(url="/", status_code=303)
     resp.set_cookie(key="usuario", value=user, max_age=604800)
-    # Opcional: limpiar la sesión anterior al iniciar con otro usuario
-    # Puedes descomentar la siguiente línea si quieres borrar todos los tokens al login
-    # request.session.clear()
     return resp
 
 @app.get("/logout")
@@ -129,7 +123,6 @@ async def logout(request: Request):
     usuario = request.cookies.get("usuario", "")
     resp = RedirectResponse(url="/login", status_code=303)
     resp.delete_cookie("usuario")
-    # Limpia solo el token del usuario actual, no los demás
     if usuario:
         request.session.pop(f"token_{usuario}", None)
     return resp
@@ -160,12 +153,10 @@ async def callback_spotify(request: Request, code: str | None = None, state: str
         try:
             auth_manager = obtener_auth_manager(usuario_activo)
             token_info = auth_manager.get_access_token(code, as_dict=True)
-            # Guardar token asociado al usuario
             guardar_token_para_usuario(request, usuario_activo, token_info)
             print(f"Token guardado correctamente para {usuario_activo}")
         except Exception as e:
             print(f"Error en callback para {usuario_activo}: {e}")
-            # Podrías redirigir a una página de error si quieres
     else:
         print("No se recibió code en callback, posible error de autorización")
             
@@ -185,25 +176,34 @@ class PlaylistRequest(BaseModel):
 # Endpoint para crear listas por múltiples artistas (JSON)
 @app.post("/api/crear_listas_json")
 async def crear_listas_json(request: Request, payload: CrearListasBody, usuario: str | None = Cookie(None)):
-    if not usuario: return {"status": "error", "message": "No has iniciado sesión en la app"}
+    if not usuario: return [{"status": "error", "message": "No has iniciado sesión en la app"}]
     
     access_token = obtener_token_valido(request, usuario)
     if not access_token: 
-        return {"status": "error", "message": "Debes conectar Spotify con este usuario antes de crear listas."}
+        return [{"status": "auth_required", "message": "Debes conectar Spotify con este usuario antes de crear listas."}]
         
     nombres = [n.strip() for n in payload.nombres.split(',') if n.strip()]
-    return crear_listas_por_nombres(nombres, language=payload.language, access_token=access_token, id_extra=payload.id_extra)
+    
+    # Obtenemos el resultado de spotify_utils
+    resultado = crear_listas_por_nombres(nombres, language=payload.language, access_token=access_token, id_extra=payload.id_extra)
+    
+    # Nos aseguramos de devolverlo como una lista para que el index.html pueda leer data[0]
+    return [resultado] if isinstance(resultado, dict) else resultado
 
 # Endpoint para crear una sola playlist
 @app.post("/api/crear_playlist")
 def crear_playlist(request: Request, req: PlaylistRequest, usuario: str | None = Cookie(None)):
-    if not usuario: return {"status": "error"}
+    if not usuario: return [{"status": "error", "message": "No has iniciado sesión"}]
     
     access_token = obtener_token_valido(request, usuario)
     if not access_token: 
-        return [{"status": "error", "message": "Debes conectar Spotify con este usuario."}]
+        return [{"status": "auth_required", "message": "Debes conectar Spotify con este usuario."}]
         
-    return [crear_playlist_para_artista(req.artist_name, language=req.language, access_token=access_token, id_extra=req.id_extra)]
+    # Obtenemos el resultado de spotify_utils
+    resultado = crear_playlist_para_artista(req.artist_name, language=req.language, access_token=access_token, id_extra=req.id_extra)
+    
+    # Lo devolvemos envuelto en una lista para que el index.html evalúe data[0]
+    return [resultado]
 
 # Subida de imágenes
 @app.post("/api/upload_image")
